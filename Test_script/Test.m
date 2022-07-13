@@ -1,0 +1,151 @@
+%% analysis by chronux toolbox
+clc;close all;clear all;
+%Import script files
+addpath(genpath('LFP/Scripts'));
+%Set data path
+addpath('LFP/16p 11.2 group');
+%% Load data
+file = readNex5File();
+list = file.contvars;
+StringList = [""];
+for i = 1:length(list)
+    StringList = [StringList;list{i,1}.name];
+end
+StringList = StringList(2:end);
+channel = listdlg('ListString',StringList);
+fs = list{channel,1}.ADFrequency;
+%Select the channel to be analyzed
+FP = list{channel,1}.data;
+data = FP;
+%% Data filtering
+% Notch filter (49-51 Hz)
+d = designfilt('bandstopiir','FilterOrder',2, ...
+               'HalfPowerFrequency1',49,'HalfPowerFrequency2',51, ...
+               'DesignMethod','butter','SampleRate',fs);
+% fvtool(d,'Fs',fs) % Visualize the notch filter
+n_data = filtfilt(d, data);
+data = n_data;
+clear n_data;
+disp('Notch filtering done')
+
+% Band pass filter (0.1-100 Hz)
+f_data = bandpass(data,[.1 100],fs);
+data = f_data;
+clear f_data;
+disp('band pass filtering done')
+%% Save data as .mat
+save('LFP/Data/test-data_LFP_filtered.mat', 'data', 'fs');
+% save('','data','fs');
+%% Load .mat
+clc;close all;clear all;
+addpath(genpath('LFP/Scripts'));
+addpath('LFP/16p 11.2 group');
+% load('LFP/Data/test-data_LFP.mat', 'data', 'fs');
+% load("LFP/Data/test-data_LFP_filtered.mat",'data','fs');
+load("LFP/Data/preprocessed_data/1532-4-18-1_FP04.mat",'data','fs');
+%% Down sampling
+ts = (1:length(data))/fs;
+data = data(1:5:end);
+ts = ts(1:5:end);
+fs = 200;
+%% Phase calculation
+data_hilbert = hilbert(data); % hilbert transformation
+data_amplitude = abs(data_hilbert);
+data_phase = angle(data_hilbert);
+%% Spectrum analysis (No moving window)
+sampling_gap = 1/fs;
+data_length = length(data);
+time_start = 0 + sampling_gap;
+time_end = data_length/fs;
+time_series = transpose(time_start:sampling_gap:time_end);
+mat_time_data = [time_series data];
+
+params.tapers=[3 5];
+params.Fs=fs;
+params.fpass = [0.1 100];
+params.err = [1 0.05];
+% S: the estimated spectrum; 
+% f: the frequencies of estimation; the confidence band (p<0.05)
+% Note for *S*: the first dimension being the power in different frequencies,
+%   the second dimension being the trial or channel. The second dimension is
+%   1 when the user requests a spectrum that is averaged over the trials or channels
+% [S,f,Serr]=mtspectrumc(data,params)
+[S,f,Serr]=mtspectrumc(data,params);
+% result=mtspectrumc(mat_time_data,params);
+%% Plot spectrum analysis result (without moving window)
+% plot_vector(S,f,[],Serr);
+plot_vector(S,f);
+%% Spectrum analysis (With moving window)
+sampling_gap = 1/fs;
+data_length = length(data);
+time_start = 0 + sampling_gap;
+time_end = data_length/fs;
+time_series = transpose(time_start:sampling_gap:time_end);
+mat_time_data = [time_series data];
+
+params.tapers=[5 9];
+params.Fs=fs;
+params.fpass = [0.1 100];
+params.err = 0; % No err calculation
+params.trialave=1; % Average over trials
+movingwin = [0.5 0.05]; % movingwin = [winsize winstep]
+% Note for S: [times * frequency * channel or trial]
+% t: times
+% f: frequencies
+% Serr: error bars, only for err(1)>=1
+% [S,t,f,Serr]=mtspecgramc(data, movingwin, params);
+[S1,t,f]=mtspecgramc(data, movingwin, params);
+%% Plot spectrum analysis result result (with moving window)
+% subplot(121);
+plot_matrix(S1,t,f);
+xlabel([]);
+%% Denoising
+d_fs = 10; %Sampling frequency for detrending process
+d_movwin = [.5 .1]; %Moving window for detrending process
+
+dLFP = locdetrend(data,d_fs,d_movwin);
+
+clear d_fs d_movwin
+%% Coherance analysis
+params.Fs = fs; % Sampling frequency 
+params.tapers = [10 19]; 
+params.fpass = [0.1 100];% frequency range interested
+params.trialave = 1; % average over trials
+params.err = [1 0.05]; % population error bars
+
+data_LFP = data;
+fs_LFP = fs;
+load('LFP/Data/test-data_spike.mat', 'data', 'fs');
+data_spike = data;
+fs_spike = fs;
+clear data fs;
+[C,phi,S12,S1,S2,f,zerosp,confC,phistd]=coherencycpt(data_LFP(1:10),data_spike(1:400),params);
+%% Save result to .mat
+
+%% test
+%{
+sampling_gap = 1/fs;
+data_length = length(data);
+time_start = 0 + sampling_gap;
+time_end = data_length/fs;
+time_series = transpose(time_start:sampling_gap:time_end);
+mat_time_data = [time_series data];
+%}
+%% Calculate power using PSD
+%{
+% Calculate overall power
+freq_band = [min(f) max(f)];
+power_all = inte_by_freq(S, f, freq_band, 'simps');
+
+% Calculate power of specific frequency band
+freq_band = [8 13];
+power_alpha = inte_by_freq(S, f, freq_band, 'simps');
+
+% Calculate the power ratio
+% (power of specific band)/(total power)
+ratio = power_alpha/power_all;
+
+% Output the result
+formatstr = '\nThe ratio of power between (%d-%d) Hz compared to the total power is %f\n';
+fprintf(formatstr, freq_band(1), freq_band(2), ratio);
+%}

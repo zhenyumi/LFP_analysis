@@ -1,0 +1,241 @@
+% Thanks to this script, it's possible to compute and to visualize the smoothing of the signal, its first/second time-derivative
+% and the other features of interest (maximum, onset, inflection point)
+% All results will be saved in an excel file (each sheet will contain the results relative to a particular depth)
+
+%% Cleaning up workspace
+
+clc; clear all; close all;
+
+%% Loading data.mat
+
+%prompt = {'Insert the path of the folder containing the data:',...
+%    'Insert the name of the .mat file containing the data',...
+%    'Insert the name of the experiment:',...
+%    'Insert the depth of recording'};
+%dlg_title = 'Input';
+%num_lines = 1;
+%def = {'C:\Users\bio\Desktop\ARTICOLO_LFP_Claudia\Source_code_for_Biology&Medicine\Software_automated_LFP_analysis',...
+%    'test_data',...
+%    'exp_test',...
+%    '320'};
+
+%def = {'/Code/MATLAB/LFP/Data/',...
+%    'test-data_LFP',...
+%    'exp_test',...
+%    '320'};
+% answer = inputdlg(prompt,dlg_title,num_lines,def);
+
+path='LFP/Scripts/Rubega_et_al_software/'; %answer{1};
+name_rat='exp_test'; %answer{3};
+depth='320'; %answer{4};
+name_file='test-data_LFP'; %answer{2};
+
+addpath(path);
+addpath(genpath('LFP/Scripts'));
+loading=['load ' name_file ];
+eval(loading); 
+
+%% Choice of parameters values
+
+prompt = {'Insert the sampling frequency',...
+    'Insert the start time of the window of analysis',...
+    'Insert the finish time of the window of analysis',...
+    'Insert the factor n to decrease the sampling rate of the signal',...
+    'Insert the position of the onset between the first maximum and the main negative peak (min 0, max 1)',...
+    'Insert the minimum distance hypothesized from the onset and the main negative peak'
+    };
+dlg_title = 'Input';
+num_lines = 1;
+def = {'50000','5','50','30','0','5'};
+answer1 = inputdlg(prompt,dlg_title,num_lines,def);
+
+Fs=str2double(answer1{1});     
+a=str2double(answer1{2});
+b=str2double(answer1{3});
+ds=str2double(answer1{4});
+perc=str2double(answer1{5});
+T=str2double(answer1{6});
+
+uiwait(msgbox('Software running...','Success','modal'));
+
+%% Filter parameters
+
+if Fs/ds<2500 
+    [bf,af]=butter(3,[0.5/(Fs/2) (Fs*2/ds)/(Fs/2)],'bandpass');
+end
+
+%% Smoothing and first derivative computation for each sweep
+
+signal=struct; % struct to save the smoothing and the first time derivative
+
+for i=1:min(size(RAT))
+    
+%     if Fs/ds<2500
+%         temp=filtfilt(bf,af,RAT(:,i));
+%     else
+        temp=RAT(:,i);
+%     end
+
+    [u_hat,yp,rat1_1,t_old,gamma,y,t,yp1]=smoothing_first_derivative(temp,new_time,ds,a,b);
+
+    ttimes(:,i)=t;
+    data_downsampled(:,i)=y;
+    predictions_downsampled(:,i)=yp1;
+    signal.derivates(:,i)=u_hat;
+    signal.predictions(:,i)=yp;
+    signal.times(:,i)=t_old;
+    signal.data(:,i)=rat1_1;
+    signal.gamma(:,i)=gamma;
+
+    [u_hat2,yp,rat1_1,t_old,gamma2,y,t,yp1]=smoothing_second_derivative(temp,new_time,ds,a,b);
+
+    signal.derivates2(:,i)=u_hat2;
+    signal.gamma2(:,i)=gamma2;
+
+end
+
+%% Research of first maximum, onset, negative peak
+
+[r,c]=size(signal.derivates);
+
+indexes=struct;
+
+for N=1:c
+       for n=1:r
+        if signal.derivates(n,N)>=0
+            der(n,N)=1;
+        else
+            der(n,N)=-1;
+        end
+       end
+    temp=der(:,N);
+    [indexes.index_peak(N),indexes.peak_value(N),indexes.index_onset(N),indexes.onset_value(N),indexes.index_max(N),indexes.max_value(N)]=find_negativepeak_onset_max(temp,signal.times(:,N),T,signal.predictions(:,N),perc);
+       
+end
+
+signal.der=der;
+
+%% Research of inflection point between the onset and the negative peak and of its first time derivative value
+
+temp=signal.derivates2;
+ 
+[r,c]=size(temp);
+
+for N=1:c
+    for n=1:r
+        if temp(n,N)>=0
+            temp(n,N)=1;
+        else
+            temp(n,N)=-1;
+        end
+    end
+end
+
+for i=1:N
+    if isempty(find(temp(indexes.index_onset(i):end,i)>=0,1,'first')+indexes.index_onset(i))==0
+        inflection_index(i)=find(temp(indexes.index_onset(i):end,i)>=0,1,'first')+indexes.index_onset(i);
+    else 
+        inflection_index(i)=round((indexes.index_peak(i)+indexes.index_max(i))/2);
+    end
+der1_inflection_point(i)=signal.derivates(inflection_index(i),i);
+end
+
+indexes2.inflection_index=inflection_index;
+indexes2.der1_inflection_point=der1_inflection_point;
+
+
+%% Saving results in excel file
+
+M(1,:)=signal.times(indexes.index_max);
+M(2,:)=indexes.max_value;
+M(3,:)=signal.times(indexes.index_onset);
+M(4,:)=indexes.onset_value;
+M(5,:)=signal.times(indexes.index_peak);
+M(6,:)=indexes.peak_value;
+M(7,:)=M(5,:)-M(3,:); 
+M(8,:)=indexes2.der1_inflection_point;
+
+E={'t_max [ms]';'A_max [mV]';'t_onset [ms]';'A_onset [mV]';'t_peak [ms]';'A_peak [mV]';'onset-peak latency [ms]';'1st derivative in inflection point [mV/ms]'};
+
+filexls=['Features_' name_rat '.xls'];
+sheet=[depth 'um'];
+
+[row,col]=size(M);
+
+xlswrite(filexls,M.',sheet,'A2');
+xlswrite(filexls,E.',sheet,'A1');
+
+%% Saving results in .mat
+
+save(['Results_' name_rat '_' sheet '.mat'],'signal','indexes','indexes2')
+
+%%
+
+choice = questdlg('Would you like to plot all the results?', ...
+	'Results plotting', ...
+	'Yes, thank you','No, thank you','No, thank you');
+% Handle response
+switch choice
+    
+    case 'Yes, thank you'
+        msgbox(['Coming right up.'])
+        answ = 1;
+    case 'No, thank you'
+        msgbox('Your results were saved as .mat and .xls files')
+        answ = 0;
+end
+
+%% Plots of all the results
+
+if answ==1
+sigma=0.005;
+TS=signal.times(2,1)-signal.times(1,1);
+for i=1:min(size(RAT))
+figure()
+subplot(511)
+plot(signal.times(:,i),signal.data(:,i))
+xlabel('time [ms]')
+ylabel('[mV]')
+title('LFP')
+subplot(512)
+%figure() %!
+plot(signal.times(:,i),zeros(1,length(signal.times(:,i))),signal.times(:,i),signal.derivates(:,i)*TS)
+xlabel('time [ms]')
+ylabel('[mV/ms]')
+title('Regularized first time-derivative')
+subplot(513)
+%figure()%!
+plot(signal.times(:,i),signal.derivates2(:,i)*TS*TS,signal.times(:,i),zeros(1,length(signal.times(:,i))))
+yl=ylim;
+ylabel('[mV/ms^2]')
+xlabel('time [ms]')
+title('Regularized second time-derivative')
+subplot(514)
+%figure() %!
+hold on
+plot(signal.times(:,i),signal.predictions(:,i),'r-')
+%plot(signal.times(:,i),signal.data(:,i)) %!
+yl=ylim;
+line([signal.times(indexes.index_max(i),i) signal.times(indexes.index_max(i),i)], yl,'Color','b')
+line([signal.times(indexes.index_onset(i),i) signal.times(indexes.index_onset(i),i)], yl,'Color','k','LineStyle','--','LineWidth',1.2)
+line([signal.times(inflection_index(i),i) signal.times(inflection_index(i),i)], yl,'Color','c')
+line([signal.times(indexes.index_peak(i),i) signal.times(indexes.index_peak(i),i)], yl,'Color','g')
+legend('regularized LFP','first maximum','onset','inflection point','negative peak')
+hold off
+xlabel('time [ms]')
+ylabel('[mV]')
+title('Regularized LFP')
+subplot(515)
+%figure() %!
+hold on
+plot(ttimes(:,i),(data_downsampled(:,i)-predictions_downsampled(:,i))./sigma)
+plot(signal.times(:,i),zeros(1,length(signal.times(:,i))))
+plot(signal.times(:,i),ones(1,length(signal.times(:,i))))
+plot(signal.times(:,i),-1*ones(1,length(signal.times(:,i))))
+hold off
+title('Normalized residuals')
+xlabel('time [ms]')
+ylabel('[mV]')
+end
+
+end

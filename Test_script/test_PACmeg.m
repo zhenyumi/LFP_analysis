@@ -196,6 +196,9 @@ if ~exist(MI_folder,'dir')
     mkdir(MI_folder);
 end
 
-
-
-
+%%
+clear;clc;
+% Setup
+%Import script files (The script file needed)
+addpath(genpath('LFP/Scripts/'));
+a = readmda_modified("/Volumes/Seagate Basic/DATA/6M/spkc1533_new.mda");

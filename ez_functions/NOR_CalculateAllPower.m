@@ -37,7 +37,7 @@ function f = NOR_CalculateAllPower(data_dir, time_dir, save_dir, result_dir, ...
        freq_band_to_analyze = [ .1,100; 1,4; 4,8; 8,13; 13,30; 30,50; 50,80 ];
    end
    if(~exist('detrend','var'))
-        analyze = true;
+        detrend = false;
    end
    if(~exist('both_time','var'))
         both_time = 1;
@@ -102,8 +102,6 @@ function f = NOR_CalculateAllPower(data_dir, time_dir, save_dir, result_dir, ...
         else
             % dLFP = locdetrend(data,d_fs,d_movwin);
         end
-        
-
         
         disp('Detrending done');
         clear d_fs d_movwin;

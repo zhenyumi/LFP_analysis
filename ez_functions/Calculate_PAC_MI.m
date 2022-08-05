@@ -6,14 +6,14 @@ addpath("/Users/zhangzhenzhen/Documents/MATLAB/fieldtrip");
 % set config
 cfg                     = [];
 cfg.Fs                  = 1000;
-cfg.phase_freqs         = [13:0.5:30];
-cfg.amp_freqs           = [32:1:80];
+cfg.phase_freqs         = [1.5:0.5:4];
+cfg.amp_freqs           = [6:1:80];
 cfg.method              = 'tort'; %('tort','ozkurt','plv','canolty)
 cfg.filt_order          = 3;
 % cfg.surr_method         = 'swap_blocks';
 cfg.surr_N              = 200;
 cfg.amp_bandw_method    = 'number';
-cfg.amp_bandw           = 31;
+cfg.amp_bandw           = 5;
 cfg.avg_PAC             = 'yes';
 
 % use *readtable* function or not
@@ -26,7 +26,7 @@ set_colorlimit = false;
 colorlimit = [0 7e-3]; %Phase-Alpha
 
 % Set the phase and frequency range that 
-phase_range = [13 30];
+phase_range = [2 4];
 amplitude_range = [50 80];
 
 
@@ -37,8 +37,8 @@ result_path = '/Users/zhangzhenzhen/Library/CloudStorage/OneDrive-共享的库-O
 channel_names = ["FP04" "FP05" "FP12" "FP13"];
 
 % 6m x Tranining x LED
-%subject_names = ["1532-4-18-1","1533-4-18-1","1534-4-18-1","3709-11-10-1","3716-11-24-1"];
-%result_path = strcat(result_path, '/6m_without_LED/');
+subject_names = ["1532-4-18-1","1533-4-18-1","1534-4-18-1","3709-11-10-1","3716-11-24-1"];
+result_path = strcat(result_path, '/6m_without_LED/');
 
 % 15m x Tranining x LED
 %subject_names = ["3731-11-10-1","3892-11-24-1","MV791-4-18-1","MV794-4-18-1","MV797-4-18-1"];
@@ -49,8 +49,8 @@ channel_names = ["FP04" "FP05" "FP12" "FP13"];
 %result_path = strcat(result_path, '/6m_with_LED/');
 
 % 15m √ Tranining x LED
-subject_names = ["308-5-26-1","316-5-26-1","318-5-26-1","319-5-26-1","3732-11-10-1", "3891-11-24-1"];
-result_path = strcat(result_path, '/15m_with_LED/');
+%subject_names = ["308-5-26-1","316-5-26-1","318-5-26-1","319-5-26-1","3732-11-10-1", "3891-11-24-1"];
+%result_path = strcat(result_path, '/15m_with_LED/');
 
 % 6m x Tranining √ LED
 %subject_names = ["1532-4-18-2","1533-4-18-2","1534-4-18-2","3709-11-10-2","3716-11-24-2"];

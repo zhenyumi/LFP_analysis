@@ -23,7 +23,7 @@ function [data_c,freq_c] = cut_by_freq(data, freqs, freq_band, approximate)
         [m,upper_index] = min(abs(freqs-upper_limit));
         cutted_frequency = freqs(lower_index:upper_index);
         cutted_data = data(lower_index:upper_index);
-        fprintf("Cutted from %1$f to %2$f Hz. \n",freqs(lower_index),freqs(upper_index));
+        % fprintf("Cutted from %1$0.1f to %2$0.1f Hz. \n",freqs(lower_index),freqs(upper_index));
     else
         for i = 1:length(data)
             item = data(i);

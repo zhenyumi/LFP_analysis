@@ -1,40 +1,70 @@
 %% Draw a Smoothed heatmap
 clc;close all;clear;
-addpath(genpath('LFP/Scripts'));
+%addpath(genpath('LFP/Scripts'));
+addpath(genpath("E:\OneDrive\Code\MATLAB\LFP\Scripts"));
 
-file_path = '/Volumes/Seagate Basic/LFP/LFP/Data/preprocessed_data/';
-time_path = "/Users/zhangzhenzhen/Library/CloudStorage/OneDrive-共享的库-Onedrive/Code/MATLAB/LFP/Data/time_intervals/1s_time_intervals/";
-result_path = '/Users/zhangzhenzhen/Library/CloudStorage/OneDrive-共享的库-Onedrive/Code/MATLAB/LFP/Data/results/OFT_heatmap/';
-
+%file_path = '/Volumes/Seagate Basic/LFP/LFP/Data/preprocessed_data/';
+file_path = 'F:/preprocessed_data/';
+%time_path = "/Users/zhangzhenzhen/Library/CloudStorage/OneDrive-共享的库-Onedrive/Code/MATLAB/LFP/Data/time_intervals/1s_time_intervals/";
+time_path = 'E:/OneDrive/Code/MATLAB/LFP/Data/time_intervals/1s_time_intervals/';
+%result_path = '/Users/zhangzhenzhen/Library/CloudStorage/OneDrive-共享的库-Onedrive/Code/MATLAB/LFP/Data/results/OFT_heatmap/';
+result_path = 'E:/OneDrive/Code/MATLAB/LFP/Data/results/OFT_heatmap/';
 channel_names = ["FP04" "FP05" "FP12" "FP13"];
 
 params.tapers=[4 7];
 params.Fs=1000;
-params.fpass = [30 90];
+
+%params.fpass = [1 8];
+%params.fpass = [8 50];
+params.fpass = [50 90];
+
 params.err = 0; % No err calculation
 params.trialave=1; % Average over trials
 movingwin = [0.5 0.02]; % movingwin = [winsize winstep] [0.5 0.02]
 log = 'l'; % 'n' for not 10log10, 'l' for 10 log10
 % Smooth the heatmap or not
 smooth = true;
-%[-42 -30] for 1-8 Hz; [-50 -35] for 8-30 Hz; [-57 -45] for 30-90 Hz
+
+%[-42 -30] for 1-8 Hz; [-50 -35] for 8-50 Hz; [-57 -45] for 50-90 Hz
+%colormap_limit = [-42 -30]; 
+%colormap_limit = [-50 -30]; %9,15m 1-8Hz
+%colormap_limit = [-50 -35]; 
 colormap_limit = [-57 -45]; 
-%6m x Tranining x LED
+
+
+% 6m x Tranining x LED
 %subject_names = ["1532-4-18-1","1533-4-18-1","1534-4-18-1","3709-11-10-1","3716-11-24-1"];
-%save_path = strcat(result_path, '/6m_without_LED/');
-
-%6m with LED
+%result_path = strcat(result_path, '6m_without_LED/');
+% 15m x Tranining x LED
+%subject_names = ["3731-11-10-1","3892-11-24-1","MV791-4-18-1","MV794-4-18-1","MV797-4-18-1"];
+%result_path = strcat(result_path, '15m_without_LED/');
+% 6m √ Tranining x LED
 %subject_names = ["309-5-26-1","314-5-26-1","1882-5-26-1","1897-5-26-1","3715-11-10-1", "3717-11-24-1"];
-%save_path = strcat(result_path, '/6m_with_LED/');
+%result_path = strcat(result_path, '6m_with_LED/');
+% 15m √ Tranining x LED
+%subject_names = ["308-5-26-1","316-5-26-1","318-5-26-1","319-5-26-1","3732-11-10-1", "3891-11-24-1"];
+%result_path = strcat(result_path, '15m_with_LED/');
+% WT
+%subject_names = ["190-1", "191-1", "A25-1", "A605-1", "A621-1"];
+%result_path = strcat(result_path, 'WT/');
+% AD
+%subject_names = ["1639-1", "185-1", "A26-1", "A601-1", "A620-1"];
+%result_path = strcat(result_path, 'AD/');
+% WT_9m
+%subject_names = ["A605-1", "A621-1"];
+%result_path = strcat(result_path, 'WT_9m/');
+% AD_9m
+%subject_names = ["A601-1", "A620-1"];
+%result_path = strcat(result_path, 'AD_9m/');
+% WT_15m
+%subject_names = ["190-1", "191-1", "A25-1"];
+%result_path = strcat(result_path, 'WT_15m/');
+% AD_15m
+subject_names = ["1639-1", "185-1", "A26-1"];
+result_path = strcat(result_path, 'AD_15m/');
 
-%15m x Tranining x LED
-subject_names = ["3731-11-10-1","3892-11-24-1","MV791-4-18-1","MV794-4-18-1","MV797-4-18-1"];
-save_path = strcat(result_path, '/15m_without_LED/');
-
-%15m with LED
-%subject_names = ["318-5-28-2","316-5-28-1","308-5-28-1","319-5-28-1","3732-11-12-1","3891-11-26-1"];
-%save_path = strcat(result_path, '/15m_with_LED/');
-
+result_path = strcat(result_path, string(params.fpass(1)), "to", string(params.fpass(2)),"/");
+save_path = result_path;
 if ~exist(save_path, 'dir')
     mkdir(save_path);
 end

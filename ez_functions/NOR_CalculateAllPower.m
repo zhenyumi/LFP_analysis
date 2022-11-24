@@ -99,11 +99,11 @@ function f = NOR_CalculateAllPower(data_dir, time_dir, save_dir, result_dir, ...
         
         if detrend
             data = locdetrend(data,d_fs,d_movwin);
+            disp('Detrending done');
         else
             % dLFP = locdetrend(data,d_fs,d_movwin);
         end
         
-        disp('Detrending done');
         clear d_fs d_movwin;
         % Save data as .mat
         save_file_path = strcat(save_path, file_name,'_',channel_name,".mat");
@@ -171,6 +171,11 @@ function f = NOR_CalculateAllPower(data_dir, time_dir, save_dir, result_dir, ...
             end
 
             %save both_time data
+            tmp_dir = strcat(save_path,'seg_data_both/',time_type,'/');
+            if ~exist(tmp_dir, 'dir')
+                mkdir(tmp_dir);
+            end
+            clear tmp_dir
             save_file_path = strcat(save_path,'seg_data_both/',time_type,'/', file_name,'_',channel_name,'_seg',".mat");
             save(save_file_path, 'seg_data_both');
            
@@ -340,6 +345,10 @@ function f = NOR_CalculateAllPower(data_dir, time_dir, save_dir, result_dir, ...
                 elseif strcmp(order, "post")
                     result_save_folder = strcat(result_save_folder, "post/");
                 end
+                if ~exist(result_save_folder, 'dir')
+                    mkdir(result_save_folder);
+                end
+
 
                 name_xlsx = strcat(result_save_folder, file_name, '_', channel_name, '_', order , '.xlsx');
                 writetable(table_rel_power, name_xlsx, "Sheet", 'relative power');

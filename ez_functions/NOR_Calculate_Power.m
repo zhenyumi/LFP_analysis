@@ -31,6 +31,14 @@ result_path = 'LFP/Data/results/NOR/';
 file_name = '308-5-28-1';
 % channel_name = 'FP13';
 channel_names = ["FP04" "FP05" "FP12" "FP13"];
+
+if ~exist(save_path, 'dir')
+    mkdir(save_path);
+end
+if ~exist(result_path, 'dir')
+    mkdir(result_path);
+end
+
 fre_bands = [ .1,100; 1,4; 4,8; 8,13; 13,30; 30,50; 50,80 ; 39,41];
 for channel_name = channel_names
     disp(channel_name);

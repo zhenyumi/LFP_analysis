@@ -55,7 +55,7 @@ function f = CalculateAllPower(data_dir, time_dir, save_dir, result_dir, sample_
     % ! preprocessing
 
     if preprocessing
-        file = readNex5File([data_path file_name '.nex5']);
+        file = readNex5File(strcat(data_path,file_name,'.nex5'));
         list = file.contvars;
         StringList = [""];
         for i = 1:length(list)
